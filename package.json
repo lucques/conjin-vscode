@@ -1,0 +1,43 @@
+{
+  "name": "conjin-vscode",
+  "displayName": "conjin-vscode",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "grammars": [
+      {
+        "injectTo": ["text.html.php"],
+        "scopeName": "source.php.conjin-css",
+        "path": "./syntaxes/php-css.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.environment": "php",
+          "meta.embedded.block.css": "css"
+        }
+      },
+      {
+        "injectTo": ["text.html.php"],
+        "scopeName": "source.php.conjin-md",
+        "path": "./syntaxes/php-md.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.environment": "php",
+          "meta.embedded.block.markdown": "markdown"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.93.0",
+    "@types/node": "20.x",
+    "eslint": "^9.9.1"
+  }
+}

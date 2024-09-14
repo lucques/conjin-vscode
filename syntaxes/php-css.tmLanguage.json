@@ -1,0 +1,40 @@
+{
+    "scopeName": "source.php.conjin-css",
+    "injectionSelector": "L:text.html.php -string -comment",
+    "patterns": [
+      {
+        "begin": "(<\\?)\\s*(css_start)(\\()(\\))(;)\\s*(\\?>)",
+        "end": "(<\\?)\\s*(css_end)(\\()(\\))(;)\\s*(\\?>)",
+        "captures": {
+            "0": {
+                "name": "meta.embedded.environment.css"
+            },
+            "1": {
+                "name": "punctuation.section.embedded.begin.php"
+            },
+            "2": {
+                "name": "entity.name.function"
+            },
+            "3": {
+                "name": "meta.embedded"
+            },
+            "4": {
+                "name": "punctuation.definition.arguments.end.bracket.round.php"
+            },
+            "5": {
+                "name": "punctuation.terminator.expression.php"
+            },
+            "6": {
+                "name": "punctuation.section.embedded.end.php"
+            }
+          },
+        "contentName": "meta.embedded.block.css",
+        "patterns": [
+            {
+                "include": "source.css"
+            }
+        ]
+      }
+    ],
+    "repository": {}
+}
