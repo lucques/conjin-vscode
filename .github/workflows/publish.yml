@@ -1,26 +1,28 @@
-name: Publish to VS Code Marketplace
+name: Release extension
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: marketplace-publish
+  group: marketplace-publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   publish:
-    if: github.repository == 'lucques/conjin-vscode' && !github.event.release.prerelease
+    if: github.repository == 'lucques/conjin-vscode' && github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -30,13 +32,12 @@ jobs:
           package-manager-cache: false
 
       - name: Check the release version and publisher
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           node <<'NODE'
           const assert = require('node:assert/strict');
           const manifest = require('./package.json');
           const lockfile = require('./package-lock.json');
+          assert.match(manifest.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, 'Only stable versions can be published');
           assert.equal(process.env.RELEASE_TAG, `v${manifest.version}`, 'Release tag must match package.json: v<version>');
           assert.equal(lockfile.version, manifest.version, 'Lockfile version must match package.json');
           assert.equal(lockfile.packages[''].version, manifest.version, 'Lockfile root package version must match package.json');
@@ -67,4 +68,19 @@ jobs:
             echo "::error::Add the VSCE_PAT repository secret with Marketplace Manage permission before publishing."
             exit 1
           fi
-          npm exec --yes --ignore-scripts --package=@vscode/vsce@4.0.0 -- vsce publish --packagePath "$RUNNER_TEMP/conjin-vscode.vsix"
+          npm exec --yes --ignore-scripts --package=@vscode/vsce@4.0.0 -- vsce publish --packagePath "$RUNNER_TEMP/conjin-vscode.vsix" --skip-duplicate
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if release_is_draft="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null)"; then
+            if [ "$release_is_draft" = "false" ]; then
+              echo "GitHub Release $RELEASE_TAG is already published."
+              exit 0
+            fi
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "$RELEASE_TAG" --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/conjin-vscode.vsix" --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
