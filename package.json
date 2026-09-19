@@ -1,15 +1,46 @@
 {
   "name": "conjin-vscode",
   "displayName": "conjin-vscode",
-  "description": "",
-  "version": "0.0.1",
+  "publisher": "lucques",
+  "license": "MIT",
+  "description": "Conjin content page templates and embedded CSS and Markdown highlighting.",
+  "homepage": "https://github.com/lucques/conjin-vscode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucques/conjin-vscode.git"
+  },
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.93.0"
   },
   "categories": [
-    "Other"
+    "Snippets",
+    "Programming Languages"
   ],
+  "main": "./extension.js",
   "contributes": {
+    "snippets": [
+      {
+        "language": "php",
+        "path": "./snippets/conjin.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "conjin.newPage",
+        "title": "New Conjin Page",
+        "category": "Conjin"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "conjin.newPage",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@20"
+        }
+      ]
+    },
     "grammars": [
       {
         "injectTo": ["text.html.php"],
@@ -33,11 +64,15 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "pretest": "npm run lint"
+    "pretest:unit": "npm run lint",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node --test test/unit.test.js",
+    "test:integration": "node ./test/run.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.93.0",
-    "@types/node": "20.x",
-    "eslint": "^9.9.1"
+    "@types/vscode": "~1.93.0",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0"
   }
 }

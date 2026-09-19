@@ -1,0 +1,29 @@
+{
+  "Conjin content page": {
+    "prefix": "cjpage",
+    "isFileTemplate": true,
+    "description": "Conjin content page with role-info, a title, and a content section.",
+    "body": [
+      "<?",
+      "    \\$preprocess = function (TargetPreprocessContext \\$c) {",
+      "        \\$c->activate_module('role-info');",
+      "",
+      "        \\$c->run_macro('title', 'set', '${1:The title}');",
+      "    };",
+      "",
+      "    \\$process = function(Target \\$target) {",
+      "?>",
+      "",
+      "",
+      "<p>",
+      "    ${2:The content}",
+      "</p>",
+      "",
+      "$0",
+      "<?",
+      "    };",
+      "?>",
+      ""
+    ]
+  }
+}
