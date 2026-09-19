@@ -1,0 +1,70 @@
+name: Publish to VS Code Marketplace
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'lucques/conjin-vscode' && !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Check the release version and publisher
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const manifest = require('./package.json');
+          const lockfile = require('./package-lock.json');
+          assert.equal(process.env.RELEASE_TAG, `v${manifest.version}`, 'Release tag must match package.json: v<version>');
+          assert.equal(lockfile.version, manifest.version, 'Lockfile version must match package.json');
+          assert.equal(lockfile.packages[''].version, manifest.version, 'Lockfile root package version must match package.json');
+          assert.equal(manifest.publisher, 'lucques', 'Unexpected Marketplace publisher');
+          NODE
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install VS Code and the virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xvfb xauth
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/code.deb" https://update.code.visualstudio.com/latest/linux-deb-x64/stable
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install --yes "$RUNNER_TEMP/code.deb"
+
+      - name: Run lint, unit tests, and editor integration tests
+        run: npm test
+
+      - name: Package the extension
+        run: npm exec --yes --ignore-scripts --package=@vscode/vsce@4.0.0 -- vsce package --no-dependencies --out "$RUNNER_TEMP/conjin-vscode.vsix"
+
+      - name: Publish the packaged extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::Add the VSCE_PAT repository secret with Marketplace Manage permission before publishing."
+            exit 1
+          fi
+          npm exec --yes --ignore-scripts --package=@vscode/vsce@4.0.0 -- vsce publish --packagePath "$RUNNER_TEMP/conjin-vscode.vsix"
